@@ -1,0 +1,2096 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payslip · Department of Agriculture · NIR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --forest: #1e4a30;
+            --forest-deep: #123420;
+            --gold: #b9862f;
+            --gold-soft: #e8d4a6;
+            --paper: #f7f3e9;
+            --ink: #211d15;
+            --rule: #2a2a22;
+            --sage: #7f9a72;
+            --chrome-bg: #2b2f28;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background: var(--chrome-bg);
+            display: flex;
+            flex-direction: column;
+            font-family: 'Source Serif 4', serif;
+        }
+
+        .toolbar {
+            width: 100%;
+            background: linear-gradient(180deg, var(--forest) 0%, var(--forest-deep) 100%);
+            padding: 14px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--gold);
+            flex-shrink: 0;
+            z-index: 10;
+            min-height: 60px;
+            position: relative;
+        }
+
+        .toolbar .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .toolbar h2 {
+            color: var(--gold-soft);
+            font-weight: 600;
+            font-size: 1.05rem;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            margin: 0;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .toolbar h2 span {
+            display: block;
+            font-family: 'Source Serif 4', serif;
+            text-transform: none;
+            letter-spacing: 0;
+            font-size: 0.72rem;
+            color: rgba(232, 212, 166, 0.65);
+            font-style: italic;
+            margin-top: 2px;
+        }
+
+        .toolbar .controls {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .toolbar .print-btn {
+            background: var(--gold);
+            border: none;
+            padding: 9px 22px;
+            border-radius: 3px;
+            font-weight: 600;
+            font-size: 0.82rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--forest-deep);
+            cursor: pointer;
+            transition: 0.15s;
+            font-family: 'IBM Plex Mono', monospace;
+            white-space: nowrap;
+        }
+
+        .toolbar .print-btn:hover {
+            background: var(--gold-soft);
+        }
+
+        .toolbar .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 4px;
+            border-radius: 3px;
+            border: 1px solid rgba(185, 134, 47, 0.4);
+            flex-shrink: 0;
+        }
+
+        .toolbar .zoom-controls button {
+            background: transparent;
+            border: none;
+            width: 28px;
+            height: 28px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--gold-soft);
+            transition: 0.15s;
+            border-radius: 2px;
+        }
+
+        .toolbar .zoom-controls button:hover {
+            background: rgba(185, 134, 47, 0.25);
+        }
+
+        .toolbar .zoom-controls span {
+            color: var(--gold-soft);
+            font-weight: 500;
+            min-width: 42px;
+            text-align: center;
+            font-size: 0.75rem;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .toolbar .zoom-controls .reset-btn {
+            width: auto;
+            padding: 0 10px;
+            font-size: 0.68rem;
+            letter-spacing: 0.5px;
+        }
+
+        .toolbar .zoom-controls span#zoomLevel {
+            outline: none;
+            cursor: text;
+            border-radius: 2px;
+        }
+
+        .toolbar .zoom-controls span#zoomLevel:hover,
+        .toolbar .zoom-controls span#zoomLevel:focus {
+            background: rgba(185, 134, 47, 0.25);
+        }
+
+        .toolbar .zoom-controls .divider {
+            width: 1px;
+            height: 18px;
+            background: rgba(185, 134, 47, 0.4);
+            margin: 0 4px;
+        }
+
+        .main-container {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background:
+                radial-gradient(circle at 50% 0%, rgba(185, 134, 47, 0.05), transparent 60%),
+                var(--chrome-bg);
+            overflow: auto;
+            padding: 40px 20px;
+            cursor: grab;
+        }
+
+        .main-container.dragging {
+            cursor: grabbing;
+            user-select: none;
+        }
+
+        .main-container.dragging iframe {
+            pointer-events: none;
+        }
+
+        .iframe-center {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+            min-height: 100%;
+        }
+
+        .iframe-center iframe {
+            width: 8.5in;
+            height: 13in;
+            border: none;
+            background: white;
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+            transition: transform 0.15s ease;
+            transform-origin: top center;
+            flex-shrink: 0;
+        }
+
+        @media print {
+            .toolbar {
+                display: none;
+            }
+
+            .main-container {
+                padding: 0;
+                background: white;
+                overflow: visible;
+                align-items: center;
+            }
+
+            .iframe-center {
+                align-items: center;
+            }
+
+            .iframe-center iframe {
+                width: 100%;
+                height: 100%;
+                box-shadow: none;
+                transform: scale(1) !important;
+            }
+        }
+
+        @media screen and (max-width: 900px) {
+            .toolbar {
+                padding: 10px 16px;
+                flex-wrap: wrap;
+                gap: 8px;
+                min-height: 56px;
+            }
+
+            .toolbar h2 {
+                font-size: 0.85rem;
+            }
+
+            .toolbar .print-btn {
+                padding: 7px 16px;
+                font-size: 0.75rem;
+            }
+
+            .main-container {
+                padding: 30px 10px;
+            }
+        }
+
+        @media screen and (max-width: 600px) {
+            .toolbar h2 span {
+                display: none;
+            }
+
+            .toolbar .zoom-controls span {
+                min-width: 32px;
+                font-size: 0.68rem;
+            }
+
+            .main-container {
+                padding: 20px 5px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="toolbar">
+        <div class="brand">
+            <h2>Payslip Generator
+                <span>Department of Agriculture · Negros Island Region</span>
+            </h2>
+        </div>
+        <div class="controls">
+            <div class="zoom-controls">
+                <button onclick="zoomOut()" title="Zoom out (Ctrl −)">−</button>
+                <span id="zoomLevel" contenteditable="true" spellcheck="false"
+                    title="Click to type an exact zoom %">100%</span>
+                <button onclick="zoomIn()" title="Zoom in (Ctrl +)">+</button>
+                <button class="reset-btn" onclick="fitWidth()" title="Fit page to window width">Fit Width</button>
+                <button class="reset-btn" onclick="fitPage()" title="Fit whole page in window">Fit Page</button>
+                <button class="reset-btn" onclick="setZoom(1, { preserveScroll: false })"
+                    title="Actual size (100%)">100%</button>
+            </div>
+            <button class="print-btn" onclick="printIframe()">Print</button>
+        </div>
+    </div>
+
+    <div class="main-container" id="mainContainer">
+        <div class="iframe-center" id="iframeCenter">
+            <iframe id="payslipIframe" srcdoc="
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset='utf-8'>
+                <link rel='preconnect' href='https://fonts.googleapis.com'>
+                <link href='https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap' rel='stylesheet'>
+                <style>
+                    :root {
+                        --forest: #1e4a30;
+                        --gold: #b9862f;
+                        --paper: #f7f3e9;
+                        --ink: #211d15;
+                        --rule: #2a2a22;
+                        --sage: #7f9a72;
+                    }
+                    * { margin:0; padding:0; box-sizing:border-box; }
+                    body {
+                        background: white;
+                        width: 8.5in;
+                        height: 13in;
+                        margin: 0;
+                        padding: 0.15in 0.2in;
+                        font-family: 'Source Serif 4', serif;
+                        color: var(--ink);
+                        display: flex;
+                        gap: 0.2in;
+                        overflow: hidden;
+                        font-size: 14px;
+                    }
+                    .column {
+                        flex: 1;
+                        padding: 10px 8px;
+                        display: flex;
+                        flex-direction: column;
+                        background: white;
+                        position: relative;
+                        overflow: hidden;
+                    }
+                    .border-tl {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        height: 70px;
+                        z-index: 1;
+                        pointer-events: none;
+                    }
+                    .border-br {
+                        position: absolute;
+                        bottom: 0;
+                        right: 0;
+                        height: 70px;
+                        z-index: 1;
+                        pointer-events: none;
+                        transform: scale(-1, -1);
+                    }
+                    .header-wrapper {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 6px;
+                        margin-bottom: 0px;
+                        padding-bottom: 10;
+                        border-bottom: 1px solid #000;
+                        position: relative;
+                        z-index: 2;
+                        flex-shrink: 0;
+                        width: 100%;
+                        min-height: 36px;
+                    }
+                    .logos {
+                        display: flex;
+                        gap: 2px;
+                        flex-shrink: 0;
+                        position: absolute;
+                        left: 20px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                    }
+                    .logos img {
+                        height: 30px;
+                        width: auto;
+                        display: block;
+                    }
+                    .header-text {
+                        text-align: center;
+                        font-size: 7px;
+                        line-height: 1.2;
+                        flex: 1;
+                        margin: 0 auto;
+                        margin-bottom: 10px;
+                        width: 100%;
+                    }
+                    .header-text .bold {
+                        font-weight: 700;
+                    }
+                    .header-text .normal {
+                        font-weight: 400;
+                    }
+                    
+                    .payslip-title {
+                        text-align: center;
+                    
+                        font-weight: 700;
+                        letter-spacing: 1px;
+                        margin-top: 10px;
+                        margin-bottom: 0px;
+                        text-transform: uppercase;
+                        line-height: 1.3;
+                    }
+                    .payslip-title .sub {
+                        font-weight: 400;
+                        font-style: italic;
+                        font-size: 9px;
+                        text-transform: none;
+                        display: block;
+                    }
+                    .month-year {
+                        text-align: center;
+                        font-weight: 400;
+                        margin-bottom: 10px;
+                        letter-spacing: 0.5px;
+                    }
+                    .month-year input {
+                        font-family: 'Source Serif 4', serif;
+                        text-align: center;
+                        border: none;
+                        background: transparent;
+                        padding: 0 4px;
+                        width: 110px;
+                        cursor: pointer;
+                        color: var(--ink);
+                    }
+                    .month-year input:focus {
+                        outline: none;
+                        border-bottom: 1px solid var(--gold);
+                    }
+                    .month-year input::-webkit-calendar-picker-indicator {
+                        display: inline-block;
+                        -webkit-appearance: auto;
+                        cursor: pointer;
+                        opacity: 0.7;
+                        padding: 2px;
+                    }
+                    .month-year input::-webkit-calendar-picker-indicator:hover {
+                        opacity: 1;
+                    }
+                    .month-year input::-webkit-inner-spin-button {
+                        display: none;
+                        -webkit-appearance: none;
+                    }
+                    .month-year input {
+                        -moz-appearance: textfield;
+                    }
+                    @media print {
+                        .month-year input::-webkit-calendar-picker-indicator {
+                            display: none !important;
+                            -webkit-appearance: none !important;
+                        }
+                        .month-year input {
+                            -moz-appearance: textfield !important;
+                            border: none !important;
+                            border-bottom: none !important;
+                            background: transparent !important;
+                        }
+                    }
+                    .title-divider {
+                        border-bottom: 1px solid #000;
+                        margin-bottom: 6px;
+                        width: 100%;
+                    }
+                    .section-header {
+                        display: flex;
+                        align-items: center;
+                        width: 100%;
+                    }
+                    .section-header .section-title {
+                        font-weight: 700;
+                        letter-spacing: 0.3px;
+                    }
+                    .section-header .add-section-btn {
+                        width: 20px;
+                        height: 20px;
+                        border: none;
+                        border-radius: 50%;
+                        background: #2a7a3e;
+                        color: white;
+                        font-size: 14px;
+                        font-weight: 700;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 0;
+                        margin-left: 10px;
+                        line-height: 1;
+                        flex-shrink: 0;
+                    }
+                    .section-header .add-section-btn:hover {
+                        background: #1e5e2e;
+                    }
+                    .personnel-section {
+                        margin-top: 6px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                        border-bottom: 1px solid #000;
+                        padding-bottom: 10px;
+                    }
+                    .personnel-row {
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                    }
+                    .personnel-row .label {
+                        font-weight: 600;
+                        min-width: 45px;
+                    }
+                    .personnel-row input {
+                        font-family: 'Source Serif 4', serif;
+                        border: none;
+                        border-bottom: 1px solid #000;
+                        background: transparent;
+                        padding: 0 4px;
+                        flex: 1;
+                        color: var(--ink);
+                    }
+                    .personnel-row input:focus {
+                        outline: none;
+                        border-bottom-color: var(--gold);
+                    }
+                    @media print {
+                        .personnel-row input {
+                            border: none !important;
+                            border-bottom: none !important;
+                            background: transparent !important;
+                        }
+                        .personnel-section {
+                            border-bottom: 1px solid #000 !important;
+                        }
+                    }
+                    
+                    .earnings-section {
+                        margin-top: 6px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                        border-bottom: 1px solid #000;
+                        padding-bottom: 10px;
+                    }
+                    .earnings-title {
+                        font-weight: 700;
+                        letter-spacing: 0.3px;
+                    }
+                    .earnings-row {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding-left: 20px;
+                        position: relative;
+                        gap: 8px;
+                    }
+                    .earnings-row .label-input {
+                        font-family: 'Source Serif 4', serif;
+                        border: none;
+                        border-bottom: 1px solid #000;
+                        background: transparent;
+                        padding: 0px;
+                        flex: 0 0 95px; 
+                        width: 95px;
+                        min-width: 95px;
+                        max-width: 95px; 
+                        color: var(--ink);
+                        text-align: left !important;
+                    }
+                    .earnings-row .label-input:focus {
+                        outline: none;
+                        border-bottom-color: var(--gold);
+                        text-align: left !important;
+                    }
+                    .earnings-row .label-static {
+                        font-weight: 400;
+                        flex: 1;
+                    }
+                    .earnings-row input[type='text'] {
+                        font-family: 'Source Serif 4', serif;
+                        text-align: right;
+                        border: none;
+                        border-bottom: 1px solid #000;
+                        background: transparent;
+                        padding: 0px;
+                        width: 90px;
+                        color: var(--ink);
+                        flex-shrink: 0;
+                    }
+                    .earnings-row input[type='text']:focus {
+                        outline: none;
+                        border-bottom-color: var(--gold);
+                    }
+                    .earnings-row .add-btn,
+                    .earnings-row .remove-btn {
+                        position: absolute;
+                        left: 0px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        width: 16px;
+                        height: 16px;
+                        border: none;
+                        border-radius: 50%;
+                        font-weight: 700;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 0;
+                        line-height: 1;
+                        color: white;
+                        flex-shrink: 0;
+                    }
+                    .earnings-row .add-btn {
+                        background: #2a7a3e;
+                    }
+                    .earnings-row .add-btn:hover {
+                        background: #1e5e2e;
+                    }
+                    .earnings-row .remove-btn {
+                        background: #b13a3a;
+                    }
+                    .earnings-row .remove-btn:hover {
+                        background: #8f2a2a;
+                    }
+                    .earnings-row .gross-label {
+                        font-weight: 700;
+                        margin-top: 2px;
+                        width: 100%;
+                        display: flex;
+                        justify-content: left;
+                        align-items: left;
+                        padding-left: 0px;
+                        gap: 20px;
+                    }
+                    .earnings-row .gross-label span {
+                        font-weight: 700;
+                        flex: 0 0 auto;
+                    }
+                    .earnings-row .gross-label input {
+                        font-weight: 700;
+                        border: none;
+                        border-bottom: none;
+                        width: 120px;
+                        text-align: right;
+                        background: transparent;
+                        font-family: 'Source Serif 4', serif;
+                        padding: 0 4px;
+                        color: var(--ink);
+                        flex-shrink: 0;
+                    }
+                    
+                    .deduction-section {
+                        margin-top: 6px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                        padding-bottom: 10px;
+                    }
+                    .deduction-title {
+                        font-weight: 700;
+                        letter-spacing: 0.3px;
+                    }
+                    .deduction-row {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding-left: 20px;
+                        position: relative;
+                        gap: 8px;
+                    }
+                    .deduction-row .label-input {
+                        font-family: 'Source Serif 4', serif;
+                        border: none;
+                        border-bottom: 1px solid #000;
+                        background: transparent;
+                        padding: 0px;
+                        flex: 0 0 95px; 
+                        width: 95px;
+                        min-width: 95px;
+                        max-width: 95px; 
+                        color: var(--ink);
+                        text-align: left !important;
+                    }
+                    .deduction-row .label-input:focus {
+                        outline: none;
+                        border-bottom-color: var(--gold);
+                        text-align: left !important;
+                    }
+                    .deduction-row .label-static {
+                        font-weight: 400;
+                        flex: 1;
+                        text-align: left;
+                    }
+                    .deduction-row input[type='text'] {
+                        font-family: 'Source Serif 4', serif;
+                        text-align: right;
+                        border: none;
+                        border-bottom: 1px solid #000;
+                        background: transparent;
+                        padding: 0px;
+                        width: 90px;
+                        color: var(--ink);
+                        flex-shrink: 0;
+                    }
+                    .deduction-row input[type='text']:focus {
+                        outline: none;
+                        border-bottom-color: var(--gold);
+                    }
+                    .deduction-row .add-btn,
+                    .deduction-row .remove-btn {
+                        position: absolute;
+                        left: 0px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        width: 16px;
+                        height: 16px;
+                        border: none;
+                        border-radius: 50%;
+                        font-weight: 700;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 0;
+                        line-height: 1;
+                        color: white;
+                        flex-shrink: 0;
+                    }
+                    .deduction-row .add-btn {
+                        background: #2a7a3e;
+                    }
+                    .deduction-row .add-btn:hover {
+                        background: #1e5e2e;
+                    }
+                    .deduction-row .remove-btn {
+                        background: #b13a3a;
+                    }
+                    .deduction-row .remove-btn:hover {
+                        background: #8f2a2a;
+                    }
+                    
+                    .less-section {
+                        margin-top: 2px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                        border-bottom: 1px solid #000;
+                        padding-bottom: 6px;
+                    }
+                    .less-title {
+                        font-weight: 700;
+                        letter-spacing: 0.3px;
+                    }
+                    .less-row {
+                        display: flex;
+                        justify-content: left;
+                        align-items: center;
+                        padding-left: 0px;
+                        gap: 20px;
+                    }
+                    .less-row .label-static {
+                        font-weight: 400;
+                        flex: 0 0 auto;
+                        text-align: left;
+                        padding-left: 20px;
+
+                    }
+                    .less-row input[type='text'] {
+                        font-weight: 700;
+                        border: none;
+                        border-bottom: none;
+                        width: 120px;
+                        text-align: right;
+                        background: transparent;
+                        font-family: 'Source Serif 4', serif;
+                        padding: 0 4px;
+                        color: var(--ink);
+                        flex-shrink: 0;
+                    }
+                    
+                    .total-netpay-section {
+                        margin-top: 6px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                        padding-bottom: 10px;
+                    }
+                    .total-netpay-row {
+                        display: flex;
+                        justify-content: left;
+                        align-items: center;
+                        padding-left: 0px;
+                        gap: 30px;
+                        border-bottom: 1px solid #000;
+                        padding-bottom: 2px;
+                    }
+                    .total-netpay-row span {
+                        font-weight: 700;
+                    }
+                    .total-netpay-row input {
+                        font-weight: 700;
+                        border: none;
+                        border-bottom: none;
+                        width: 120px;
+                        text-align: right;
+                        background: transparent;
+                        font-family: 'Source Serif 4', serif;
+                        border-bottom: 1px solid #000;
+                        margin-left: 5px;
+                        color: var(--ink);
+                        flex-shrink: 0;
+                    }
+                    .certified-section {
+                        margin-top: 48px;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: flex-start;
+                        padding-top: 4px;
+                    }
+                    .certified-label {
+                        font-weight: 700;
+                        letter-spacing: 0.3px;
+                        text-align: left;
+                    }
+                    .certified-center-wrapper {
+                        width: 100%;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .certified-name-wrapper {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                        margin-top: 48px;
+                    }
+                    .certified-name {
+                        font-weight: 700;
+                        letter-spacing: 0.3px;
+                        text-align: center;
+                    }
+                    .certified-name-wrapper .nav-btn {
+                        width: 18px;
+                        height: 18px;
+                        border: 1px solid #000;
+                        border-radius: 50%;
+                        background: transparent;
+                        cursor: pointer;
+                        font-weight: 700;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 0;
+                        line-height: 1;
+                        color: #000;
+                        flex-shrink: 0;
+                    }
+                    .certified-name-wrapper .nav-btn:hover {
+                        background: #eee;
+                    }
+                    .signature-space {
+                        width: 200px;
+                        border-bottom: 1px solid #000;
+                    }
+                    .certified-position {
+                        font-weight: 400;
+                        margin-top: 0px;
+                        text-align: center;
+                    }
+                    @media print {
+                        
+                    }
+                    @media print {
+                        .certified-section {
+                            margin-top: 12px;
+                        }
+                        .signature-space {
+                            border-bottom: 1px solid #000 !important;
+                        }
+                        .total-netpay-row {
+                            border-bottom: 1px solid #000 !important;
+                        }
+                        .total-netpay-row input {
+                            border-bottom: 1px solid #000 !important;
+                        }
+                        .certified-name-wrapper .nav-btn {
+                            display: none !important;
+                        }
+                    }
+                    
+                    @media print {
+                        .earnings-row input[type='text'] {
+                            border: none !important;
+                            border-bottom: none !important;
+                            background: transparent !important;
+                        }
+                        .earnings-row .label-input {
+                            border: none !important;
+                            border-bottom: none !important;
+                            background: transparent !important;
+                        }
+                        .earnings-section {
+                            border-bottom: 1px solid #000 !important;
+                        }
+                        .earnings-row .add-btn,
+                        .earnings-row .remove-btn,
+                        .deduction-row .add-btn,
+                        .deduction-row .remove-btn {
+                            display: none !important;
+                        }
+                        .deduction-row input[type='text'] {
+                            border: none !important;
+                            border-bottom: none !important;
+                            background: transparent !important;
+                        }
+                        .deduction-row .label-input {
+                            border: none !important;
+                            border-bottom: none !important;
+                            background: transparent !important;
+                        }
+                        .less-section {
+                            border-bottom: 1px solid #000 !important;
+                        }
+                        .less-row input[type='text'] {
+                            border: none !important;
+                            border-bottom: none !important;
+                            background: transparent !important;
+                        }
+                        .total-netpay-row {
+                            border-bottom: 1px solid #000 !important;
+                        }
+                        .signature-space {
+                            border-bottom: 1px solid #000 !important;
+                        }
+                    }
+                    
+                    .col-content {
+                        position: relative;
+                        z-index: 2;
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    @media print {
+                        body { padding: 0.15in 0.2in; }
+                        .month-year input {
+                            border: none !important;
+                            border-bottom: none !important;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <script>
+                    const now = new Date();
+                    const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+                    
+                    function initPickers() {
+                        const picker1 = document.getElementById('monthPicker1');
+                        const picker2 = document.getElementById('monthPicker2');
+                        
+                        if (picker1 && picker2) {
+                            picker1.value = currentMonth;
+                            picker2.value = currentMonth;
+                            
+                            picker1.addEventListener('change', function() {
+                                picker2.value = this.value;
+                            });
+                            picker2.addEventListener('change', function() {
+                                picker1.value = this.value;
+                            });
+                        }
+                    }
+                    
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', initPickers);
+                    } else {
+                        initPickers();
+                    }
+                    
+                    // ===== GLOBAL FUNCTIONS =====
+                    function formatMoney(val) {
+                        if (val === '' || val === undefined || val === null) return '';
+                        let num = parseFloat(String(val).replace(/,/g, ''));
+                        if (isNaN(num)) return '';
+                        return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    }
+                    
+                    function parseMoney(val) {
+                        if (val === '' || val === undefined) return 0;
+                        let num = parseFloat(String(val).replace(/,/g, ''));
+                        return isNaN(num) ? 0 : num;
+                    }
+                    
+                    function calculateGross(col) {
+                        const section = document.getElementById('earningsSection' + col);
+                        const inputs = section.querySelectorAll('.earning-input');
+                        let total = 0;
+                        inputs.forEach(function(inp) {
+                            total += parseMoney(inp.value);
+                        });
+                        const grossInput = document.getElementById('grossEarnings' + col);
+                        if (grossInput) {
+                            grossInput.value = formatMoney(total);
+                            if (grossInput.value === '') grossInput.value = '0.00';
+                        }
+                        calculateNetPay(col);
+                    }
+                    
+                    function calculateTotalDeduction(col) {
+                        const section = document.getElementById('deductionSection' + col);
+                        const inputs = section.querySelectorAll('.deduction-input');
+                        let total = 0;
+                        inputs.forEach(function(inp) {
+                            total += parseMoney(inp.value);
+                        });
+                        const totalInput = document.getElementById('totalDeduction' + col);
+                        if (totalInput) {
+                            totalInput.value = formatMoney(total);
+                            if (totalInput.value === '') totalInput.value = '0.00';
+                        }
+                        calculateNetPay(col);
+                    }
+                    
+                    function calculateNetPay(col) {
+                        const grossInput = document.getElementById('grossEarnings' + col);
+                        const totalDedInput = document.getElementById('totalDeduction' + col);
+                        const netPayInput = document.getElementById('netPay' + col);
+                        
+                        if (grossInput && totalDedInput && netPayInput) {
+                            const gross = parseMoney(grossInput.value);
+                            const ded = parseMoney(totalDedInput.value);
+                            const net = gross - ded;
+                            netPayInput.value = formatMoney(net);
+                            if (netPayInput.value === '') netPayInput.value = '0.00';
+                        }
+                    }
+                    
+                    function validateNumberInput(input) {
+                        let val = input.value.replace(/[^0-9.]/g, '');
+                        const parts = val.split('.');
+                        if (parts.length > 2) {
+                            val = parts[0] + '.' + parts.slice(1).join('');
+                        }
+                        input.value = val;
+                    }
+                    
+                    function setupEarningInput(input) {
+                        const col = input.getAttribute('data-col');
+                        
+                        input.addEventListener('keydown', function(e) {
+                            if (e.key === 'e' || e.key === 'E' || e.key === ' ' || 
+                                (e.key.length === 1 && !/[0-9.]/.test(e.key) && 
+                                 e.key !== 'Backspace' && e.key !== 'Delete' && 
+                                 e.key !== 'Tab' && e.key !== 'Escape' && 
+                                 e.key !== 'Enter' && e.key !== 'Home' && 
+                                 e.key !== 'End' && e.key !== 'ArrowLeft' && 
+                                 e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) {
+                                e.preventDefault();
+                            }
+                        });
+                        
+                        input.addEventListener('input', function() {
+                            validateNumberInput(this);
+                            const col = this.getAttribute('data-col');
+                            calculateGross(col);
+                            
+                            const otherCol = col === '1' ? '2' : '1';
+                            const otherSection = document.getElementById('earningsSection' + otherCol);
+                            const otherInputs = otherSection.querySelectorAll('.earning-input');
+                            const thisInputs = document.getElementById('earningsSection' + col).querySelectorAll('.earning-input');
+                            const idx = Array.from(thisInputs).indexOf(this);
+                            if (otherInputs[idx]) {
+                                otherInputs[idx].value = this.value;
+                                calculateGross(otherCol);
+                            }
+                        });
+                        
+                        input.addEventListener('blur', function() {
+                            if (this.value !== '' && this.value !== '.' && this.value !== '-') {
+                                const formatted = formatMoney(this.value);
+                                if (formatted !== '') {
+                                    this.value = formatted;
+                                } else {
+                                    this.value = '';
+                                }
+                            } else {
+                                this.value = '';
+                            }
+                            const col = this.getAttribute('data-col');
+                            calculateGross(col);
+                            
+                            const otherCol = col === '1' ? '2' : '1';
+                            const otherSection = document.getElementById('earningsSection' + otherCol);
+                            const otherInputs = otherSection.querySelectorAll('.earning-input');
+                            const thisInputs = document.getElementById('earningsSection' + col).querySelectorAll('.earning-input');
+                            const idx = Array.from(thisInputs).indexOf(this);
+                            if (otherInputs[idx]) {
+                                otherInputs[idx].value = this.value;
+                                calculateGross(otherCol);
+                            }
+                        });
+                    }
+                    
+                    function setupDeductionInput(input) {
+                        const col = input.getAttribute('data-col');
+                        
+                        input.addEventListener('keydown', function(e) {
+                            if (e.key === 'e' || e.key === 'E' || e.key === ' ' || 
+                                (e.key.length === 1 && !/[0-9.]/.test(e.key) && 
+                                 e.key !== 'Backspace' && e.key !== 'Delete' && 
+                                 e.key !== 'Tab' && e.key !== 'Escape' && 
+                                 e.key !== 'Enter' && e.key !== 'Home' && 
+                                 e.key !== 'End' && e.key !== 'ArrowLeft' && 
+                                 e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) {
+                                e.preventDefault();
+                            }
+                        });
+                        
+                        input.addEventListener('input', function() {
+                            validateNumberInput(this);
+                            const col = this.getAttribute('data-col');
+                            calculateTotalDeduction(col);
+                            
+                            const otherCol = col === '1' ? '2' : '1';
+                            const otherSection = document.getElementById('deductionSection' + otherCol);
+                            const otherInputs = otherSection.querySelectorAll('.deduction-input');
+                            const thisInputs = document.getElementById('deductionSection' + col).querySelectorAll('.deduction-input');
+                            const idx = Array.from(thisInputs).indexOf(this);
+                            if (otherInputs[idx]) {
+                                otherInputs[idx].value = this.value;
+                                calculateTotalDeduction(otherCol);
+                            }
+                        });
+                        
+                        input.addEventListener('blur', function() {
+                            if (this.value !== '' && this.value !== '.' && this.value !== '-') {
+                                const formatted = formatMoney(this.value);
+                                if (formatted !== '') {
+                                    this.value = formatted;
+                                } else {
+                                    this.value = '';
+                                }
+                            } else {
+                                this.value = '';
+                            }
+                            const col = this.getAttribute('data-col');
+                            calculateTotalDeduction(col);
+                            
+                            const otherCol = col === '1' ? '2' : '1';
+                            const otherSection = document.getElementById('deductionSection' + otherCol);
+                            const otherInputs = otherSection.querySelectorAll('.deduction-input');
+                            const thisInputs = document.getElementById('deductionSection' + col).querySelectorAll('.deduction-input');
+                            const idx = Array.from(thisInputs).indexOf(this);
+                            if (otherInputs[idx]) {
+                                otherInputs[idx].value = this.value;
+                                calculateTotalDeduction(otherCol);
+                            }
+                        });
+                    }
+                    
+                    function setupDeductionLabelInput(input, col) {
+                        input.addEventListener('input', function () {
+                            const otherCol = col === '1' ? '2' : '1';
+                            const thisInputs = document
+                                .getElementById('deductionSection' + col)
+                                .querySelectorAll('.label-input');
+                            const otherInputs = document
+                                .getElementById('deductionSection' + otherCol)
+                                .querySelectorAll('.label-input');
+                            const idx = Array.from(thisInputs).indexOf(this);
+                            if (idx > -1 && otherInputs[idx]) {
+                                otherInputs[idx].value = this.value;
+                            }
+                        });
+                    }
+                    
+                    function setupEarningLabelInput(input, col) {
+                        input.addEventListener('input', function () {
+                            const otherCol = col === '1' ? '2' : '1';
+                            const thisInputs = document
+                                .getElementById('earningsSection' + col)
+                                .querySelectorAll('.label-input');
+                            const otherInputs = document
+                                .getElementById('earningsSection' + otherCol)
+                                .querySelectorAll('.label-input');
+                            const idx = Array.from(thisInputs).indexOf(this);
+                            if (idx > -1 && otherInputs[idx]) {
+                                otherInputs[idx].value = this.value;
+                            }
+                        });
+                    }
+                    
+                    function getEarningRowIndex(rowElement) {
+                        const section = rowElement.parentElement;
+                        const rows = section.querySelectorAll('.earnings-row:not(#grossRow' + section.id.replace('earningsSection', '') + ')');
+                        for (let i = 0; i < rows.length; i++) {
+                            if (rows[i] === rowElement) return i;
+                        }
+                        return -1;
+                    }
+                    
+                    function getDeductionRowIndex(rowElement) {
+                        const section = rowElement.parentElement;
+                        const rows = section.querySelectorAll('.deduction-row');
+                        for (let i = 0; i < rows.length; i++) {
+                            if (rows[i] === rowElement) return i;
+                        }
+                        return -1;
+                    }
+                    
+                    function addEarningRow(col) {
+                        col = String(col);
+                        const section = document.getElementById('earningsSection' + col);
+                        const grossRow = document.getElementById('grossRow' + col);
+                        
+                        const newRow = document.createElement('div');
+                        newRow.className = 'earnings-row';
+                        newRow.style.paddingLeft = '20px';
+                        newRow.style.position = 'relative';
+                        
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'remove-btn';
+                        removeBtn.textContent = '×';
+                        removeBtn.title = 'Remove row';
+                        removeBtn.onclick = function() {
+                            const idx = getEarningRowIndex(newRow);
+                            newRow.remove();
+                            calculateGross(col);
+                            const otherCol = col === '1' ? '2' : '1';
+                            const otherSection = document.getElementById('earningsSection' + otherCol);
+                            const otherRows = otherSection.querySelectorAll('.earnings-row:not(#grossRow' + otherCol + ')');
+                            if (otherRows[idx]) {
+                                otherRows[idx].remove();
+                                calculateGross(otherCol);
+                            }
+                        };
+                        
+                        const labelInput = document.createElement('input');
+                        labelInput.type = 'text';
+                        labelInput.className = 'label-input';
+                        labelInput.placeholder = 'Description';
+                        labelInput.value = '';
+                        
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'earning-input';
+                        input.setAttribute('data-col', col);
+                        input.setAttribute('inputmode', 'decimal');
+                        input.placeholder = '0.00';
+                        
+                        newRow.appendChild(removeBtn);
+                        newRow.appendChild(labelInput);
+                        newRow.appendChild(input);
+                        
+                        section.insertBefore(newRow, grossRow);
+                        setupEarningInput(input);
+                        setupEarningLabelInput(labelInput, col);
+                        
+                        const otherCol = col === '1' ? '2' : '1';
+                        const otherSection = document.getElementById('earningsSection' + otherCol);
+                        const otherGrossRow = document.getElementById('grossRow' + otherCol);
+                        
+                        const otherNewRow = document.createElement('div');
+                        otherNewRow.className = 'earnings-row';
+                        otherNewRow.style.paddingLeft = '20px';
+                        otherNewRow.style.position = 'relative';
+                        
+                        const otherRemoveBtn = document.createElement('button');
+                        otherRemoveBtn.className = 'remove-btn';
+                        otherRemoveBtn.textContent = '×';
+                        otherRemoveBtn.title = 'Remove row';
+                        otherRemoveBtn.onclick = function() {
+                            const idx = getEarningRowIndex(otherNewRow);
+                            otherNewRow.remove();
+                            calculateGross(otherCol);
+                            const origSection = document.getElementById('earningsSection' + col);
+                            const origRows = origSection.querySelectorAll('.earnings-row:not(#grossRow' + col + ')');
+                            if (origRows[idx]) {
+                                origRows[idx].remove();
+                                calculateGross(col);
+                            }
+                        };
+                        
+                        const otherLabelInput = document.createElement('input');
+                        otherLabelInput.type = 'text';
+                        otherLabelInput.className = 'label-input';
+                        otherLabelInput.placeholder = 'Description';
+                        otherLabelInput.value = '';
+                        
+                        const otherInput = document.createElement('input');
+                        otherInput.type = 'text';
+                        otherInput.className = 'earning-input';
+                        otherInput.setAttribute('data-col', otherCol);
+                        otherInput.setAttribute('inputmode', 'decimal');
+                        otherInput.placeholder = '0.00';
+                        
+                        otherNewRow.appendChild(otherRemoveBtn);
+                        otherNewRow.appendChild(otherLabelInput);
+                        otherNewRow.appendChild(otherInput);
+                        
+                        otherSection.insertBefore(otherNewRow, otherGrossRow);
+                        setupEarningInput(otherInput);
+                        setupEarningLabelInput(otherLabelInput, otherCol);
+                        
+                        input.addEventListener('input', function() {
+                            otherInput.value = this.value;
+                            calculateGross(col);
+                            calculateGross(otherCol);
+                        });
+                        otherInput.addEventListener('input', function() {
+                            input.value = this.value;
+                            calculateGross(col);
+                            calculateGross(otherCol);
+                        });
+                        
+                        input.focus();
+                    }
+                    
+                    function addDeductionRow(col) {
+                        col = String(col);
+                        const section = document.getElementById('deductionSection' + col);
+                        
+                        const newRow = document.createElement('div');
+                        newRow.className = 'deduction-row';
+                        newRow.style.paddingLeft = '20px';
+                        newRow.style.position = 'relative';
+                        
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'remove-btn';
+                        removeBtn.textContent = '×';
+                        removeBtn.title = 'Remove row';
+                        removeBtn.onclick = function() {
+                            const idx = getDeductionRowIndex(newRow);
+                            newRow.remove();
+                            calculateTotalDeduction(col);
+                            const otherCol = col === '1' ? '2' : '1';
+                            const otherSection = document.getElementById('deductionSection' + otherCol);
+                            const otherRows = otherSection.querySelectorAll('.deduction-row');
+                            if (otherRows[idx]) {
+                                otherRows[idx].remove();
+                                calculateTotalDeduction(otherCol);
+                            }
+                        };
+                        
+                        const labelInput = document.createElement('input');
+                        labelInput.type = 'text';
+                        labelInput.className = 'label-input';
+                        labelInput.placeholder = 'Description';
+                        labelInput.value = '';
+                        
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'deduction-input';
+                        input.setAttribute('data-col', col);
+                        input.setAttribute('inputmode', 'decimal');
+                        input.placeholder = '0.00';
+                        
+                        newRow.appendChild(removeBtn);
+                        newRow.appendChild(labelInput);
+                        newRow.appendChild(input);
+                        
+                        section.appendChild(newRow);
+                        setupDeductionInput(input);
+                        setupDeductionLabelInput(labelInput, col);
+                        
+                        const otherCol = col === '1' ? '2' : '1';
+                        const otherSection = document.getElementById('deductionSection' + otherCol);
+                        
+                        const otherNewRow = document.createElement('div');
+                        otherNewRow.className = 'deduction-row';
+                        otherNewRow.style.paddingLeft = '20px';
+                        otherNewRow.style.position = 'relative';
+                        
+                        const otherRemoveBtn = document.createElement('button');
+                        otherRemoveBtn.className = 'remove-btn';
+                        otherRemoveBtn.textContent = '×';
+                        otherRemoveBtn.title = 'Remove row';
+                        otherRemoveBtn.onclick = function() {
+                            const idx = getDeductionRowIndex(otherNewRow);
+                            otherNewRow.remove();
+                            calculateTotalDeduction(otherCol);
+                            const origSection = document.getElementById('deductionSection' + col);
+                            const origRows = origSection.querySelectorAll('.deduction-row');
+                            if (origRows[idx]) {
+                                origRows[idx].remove();
+                                calculateTotalDeduction(col);
+                            }
+                        };
+                        
+                        const otherLabelInput = document.createElement('input');
+                        otherLabelInput.type = 'text';
+                        otherLabelInput.className = 'label-input';
+                        otherLabelInput.placeholder = 'Description';
+                        otherLabelInput.value = '';
+                        
+                        const otherInput = document.createElement('input');
+                        otherInput.type = 'text';
+                        otherInput.className = 'deduction-input';
+                        otherInput.setAttribute('data-col', otherCol);
+                        otherInput.setAttribute('inputmode', 'decimal');
+                        otherInput.placeholder = '0.00';
+                        
+                        otherNewRow.appendChild(otherRemoveBtn);
+                        otherNewRow.appendChild(otherLabelInput);
+                        otherNewRow.appendChild(otherInput);
+                        
+                        otherSection.appendChild(otherNewRow);
+                        setupDeductionInput(otherInput);
+                        setupDeductionLabelInput(otherLabelInput, otherCol);
+                        
+                        input.addEventListener('input', function() {
+                            otherInput.value = this.value;
+                            calculateTotalDeduction(col);
+                            calculateTotalDeduction(otherCol);
+                        });
+                        otherInput.addEventListener('input', function() {
+                            input.value = this.value;
+                            calculateTotalDeduction(col);
+                            calculateTotalDeduction(otherCol);
+                        });
+                        
+                        input.focus();
+                    }
+                    
+                    // ===== SYNC PERSONNEL DATA =====
+                    function syncPersonnel() {
+                        const fields = ['id', 'name', 'position', 'division', 'unit'];
+                        fields.forEach(function(field) {
+                            const el1 = document.getElementById(field + '1');
+                            const el2 = document.getElementById(field + '2');
+                            if (el1 && el2) {
+                                // Remove existing listeners by cloning
+                                const newEl1 = el1.cloneNode(true);
+                                const newEl2 = el2.cloneNode(true);
+                                el1.parentNode.replaceChild(newEl1, el1);
+                                el2.parentNode.replaceChild(newEl2, el2);
+                                
+                                newEl1.addEventListener('input', function() {
+                                    newEl2.value = this.value;
+                                });
+                                newEl2.addEventListener('input', function() {
+                                    newEl1.value = this.value;
+                                });
+                            }
+                        });
+                    }
+                    
+                    // ===== SETUP ALL INPUTS =====
+                    function setupAllEarningInputs() {
+                        const allInputs = document.querySelectorAll('.earning-input');
+                        allInputs.forEach(function(input) {
+                            setupEarningInput(input);
+                        });
+                    }
+                    
+                    function setupAllEarningLabels() {
+                        document.querySelectorAll('.earnings-section .label-input').forEach(function(input) {
+                            const section = input.closest('.earnings-section');
+                            const col = section.id.replace('earningsSection', '');
+                            setupEarningLabelInput(input, col);
+                        });
+                    }
+                    
+                    function setupAllDeductionInputs() {
+                        const allInputs = document.querySelectorAll('.deduction-input');
+                        allInputs.forEach(function(input) {
+                            setupDeductionInput(input);
+                        });
+                    }
+                    
+                    function setupAllDeductionLabels() {
+                        document.querySelectorAll('.deduction-section .label-input').forEach(function(input) {
+                            const section = input.closest('.deduction-section');
+                            const col = section.id.replace('deductionSection', '');
+                            setupDeductionLabelInput(input, col);
+                        });
+                    }
+                    
+                    // ===== INITIALIZE =====
+                    setupAllEarningInputs();
+                    setupAllEarningLabels();
+                    setupAllDeductionInputs();
+                    setupAllDeductionLabels();
+                    
+                    // Link monthly basic salary inputs
+                    function linkMonthlyBasic() {
+                        const basic1 = document.querySelector('#basicRow1 .earning-input');
+                        const basic2 = document.querySelector('#basicRow2 .earning-input');
+                        
+                        if (basic1 && basic2) {
+                            const newBasic1 = basic1.cloneNode(true);
+                            const newBasic2 = basic2.cloneNode(true);
+                            basic1.parentNode.replaceChild(newBasic1, basic1);
+                            basic2.parentNode.replaceChild(newBasic2, basic2);
+                            
+                            newBasic1.setAttribute('data-col', '1');
+                            newBasic2.setAttribute('data-col', '2');
+                            
+                            setupEarningInput(newBasic1);
+                            setupEarningInput(newBasic2);
+                            
+                            setTimeout(function() {
+                                calculateGross('1');
+                                calculateGross('2');
+                            }, 50);
+                        }
+                    }
+                    
+                    // Link deduction default rows (Late and Tax)
+                    function linkDeductionDefaults() {
+                        const absent1 = document.querySelector('#absentRow1 .deduction-input');
+                        const absent2 = document.querySelector('#absentRow2 .deduction-input');
+                        const late1 = document.querySelector('#lateRow1 .deduction-input');
+                        const late2 = document.querySelector('#lateRow2 .deduction-input');
+                        const tax1 = document.querySelector('#taxRow1 .deduction-input');
+                        const tax2 = document.querySelector('#taxRow2 .deduction-input');
+                        
+                        if (absent1 && absent2) {
+                            const newAbsent1 = absent1.cloneNode(true);
+                            const newAbsent2 = absent2.cloneNode(true);
+                            absent1.parentNode.replaceChild(newAbsent1, absent1);
+                            absent2.parentNode.replaceChild(newAbsent2, absent2);
+                            newAbsent1.setAttribute('data-col', '1');
+                            newAbsent2.setAttribute('data-col', '2');
+                            setupDeductionInput(newAbsent1);
+                            setupDeductionInput(newAbsent2);
+                        }
+                        
+                        if (late1 && late2) {
+                            const newLate1 = late1.cloneNode(true);
+                            const newLate2 = late2.cloneNode(true);
+                            late1.parentNode.replaceChild(newLate1, late1);
+                            late2.parentNode.replaceChild(newLate2, late2);
+                            newLate1.setAttribute('data-col', '1');
+                            newLate2.setAttribute('data-col', '2');
+                            setupDeductionInput(newLate1);
+                            setupDeductionInput(newLate2);
+                        }
+                        
+                        if (tax1 && tax2) {
+                            const newTax1 = tax1.cloneNode(true);
+                            const newTax2 = tax2.cloneNode(true);
+                            tax1.parentNode.replaceChild(newTax1, tax1);
+                            tax2.parentNode.replaceChild(newTax2, tax2);
+                            newTax1.setAttribute('data-col', '1');
+                            newTax2.setAttribute('data-col', '2');
+                            setupDeductionInput(newTax1);
+                            setupDeductionInput(newTax2);
+                        }
+                        
+                        setTimeout(function() {
+                            calculateTotalDeduction('1');
+                            calculateTotalDeduction('2');
+                        }, 50);
+                    }
+                    
+                    setTimeout(function() {
+                        linkMonthlyBasic();
+                        linkDeductionDefaults();
+                        syncPersonnel();
+                    }, 50);
+                    
+                    setTimeout(function() {
+                        calculateGross('1');
+                        calculateGross('2');
+                        calculateTotalDeduction('1');
+                        calculateTotalDeduction('2');
+                    }, 100);
+
+                    // ===== SIGNATURE SWITCHER =====
+                    var signatureData = [
+                        {
+                            name: 'ENGR. JOSE ALBERT A. BARROGO',
+                            position: 'Regional Executive Director'
+                        },
+                        {
+                            name: 'RUBY GLIZ C. BARBOSA, CPA',
+                            position: 'OIC-Chief, Administrative and Finance Division'
+                        },
+                        {
+                            name: 'ANGELINE S. RASAY',
+                            position: 'Administrative Officer III<br>AFD - HRMS'
+                        }
+                    ];
+
+                    function updateSignature(col, index) {
+                        var data = signatureData[index];
+                        var nameEl = document.getElementById('certifiedName' + col);
+                        var posEl = document.getElementById('certifiedPosition' + col);
+                        var idxEl = document.getElementById('sigIndex' + col);
+
+                        if (nameEl && posEl && idxEl) {
+                            nameEl.textContent = data.name;
+                            posEl.innerHTML = data.position;
+                            idxEl.value = index;
+                        }
+                    }
+
+                    function prevSignature(col) {
+                        var idxEl = document.getElementById('sigIndex' + col);
+                        if (idxEl) {
+                            var current = parseInt(idxEl.value) || 0;
+                            var prev = (current - 1 + signatureData.length) % signatureData.length;
+                            // Update both columns
+                            updateSignature('1', prev);
+                            updateSignature('2', prev);
+                        }
+                    }
+
+                    function nextSignature(col) {
+                        var idxEl = document.getElementById('sigIndex' + col);
+                        if (idxEl) {
+                            var current = parseInt(idxEl.value) || 0;
+                            var next = (current + 1) % signatureData.length;
+                            // Update both columns
+                            updateSignature('1', next);
+                            updateSignature('2', next);
+                        }
+                    }
+                </script>
+                
+                <!-- LEFT COLUMN -->
+                <div class='column' id='col1'>
+                    <img class='border-tl' src='border.png' alt='border'>
+                    <img class='border-br' src='border.png' alt='border mirrored'>
+                    <div class='header-wrapper'>
+                        <div class='logos'>
+                            <img src='bp.svg.png' alt='BP Logo'>
+                            <img src='da.png' alt='DA Logo'>
+                        </div>
+                        <div class='header-text'>
+                            Republic of the Philippines<br>
+                            <span class='bold'>DEPARTMENT OF AGRICULTURE</span><br>
+                            <span class='bold'>REGIONAL FIELD OFFICE &ndash; NEGROS ISLAND REGION</span><br>
+                            <span class='normal'>LBP Annex Bldg., Gatuslao St. Brgy 9, Bacolod City</span><br>
+                            <span class='normal'>nir@mail.da.gov.ph | (034) 468-5355</span>
+                        </div>
+                    </div>
+                    
+                    <div class='payslip-title'>PAYSLIP <span class='sub'>(COS/PB)</span></div>
+                    <div class='month-year'>
+                        <input type='month' id='monthPicker1'>
+                    </div>
+                    <div class='title-divider'></div>
+                    
+                    <div class='personnel-section'>
+                        <div class='personnel-row'>
+                            <span class='label'>ID:</span>
+                            <input type='text' id='id1'>
+                        </div>
+                        <div class='personnel-row'>
+                            <span class='label'>Name:</span>
+                            <input type='text' id='name1'>
+                        </div>
+                        <div class='personnel-row'>
+                            <span class='label'>Position:</span>
+                            <input type='text' id='position1'>
+                        </div>
+                        <div class='personnel-row'>
+                            <span class='label'>Division:</span>
+                            <input type='text' id='division1'>
+                        </div>
+                        <div class='personnel-row'>
+                            <span class='label'>Unit:</span>
+                            <input type='text' id='unit1'>
+                        </div>
+                    </div>
+                    
+                    <!-- EARNINGS SECTION -->
+                    <div class='earnings-section' id='earningsSection1'>
+                        <div class='section-header'>
+                            <span class='section-title'>EARNINGS</span>
+                            <button class='add-section-btn' onclick='addEarningRow(1)' title='Add earnings row'>+</button>
+                        </div>
+                        <div class='earnings-row' id='basicRow1'>
+                            <span class='label-static'>Monthly Basic Salary:</span>
+                            <input type='text' class='earning-input' data-col='1' inputmode='decimal' placeholder='0.00'>
+                        </div>
+                        <div class='earnings-row' id='grossRow1'>
+                            <div class='gross-label'>
+                                <span>Gross Earnings:</span>
+                                <input type='text' id='grossEarnings1' readonly value='0.00'>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- DEDUCTION SECTION -->
+                    <div class='deduction-section' id='deductionSection1'>
+                        <div class='section-header'>
+                            <span class='section-title'>DEDUCTION</span>
+                            <button class='add-section-btn' onclick='addDeductionRow(1)' title='Add deduction row'>+</button>
+                        </div>
+                        <div class='deduction-row' id='absentRow1'>
+                            <span class='label-static'>Absent:</span>
+                            <input type='text' class='deduction-input' data-col='1' inputmode='decimal' placeholder='0.00'>
+                        </div>
+                        <div class='deduction-row' id='lateRow1'>
+                            <span class='label-static'>Late:</span>
+                            <input type='text' class='deduction-input' data-col='1' inputmode='decimal' placeholder='0.00'>
+                        </div>
+                        <div class='deduction-row' id='taxRow1'>
+                            <span class='label-static'>Tax:</span>
+                            <input type='text' class='deduction-input' data-col='1' inputmode='decimal' placeholder='0.00'>
+                        </div>
+                    </div>
+                    
+                    <!-- LESS SECTION -->
+                    <div class='less-section'>
+                        <div class='less-title'>LESS</div>
+                        <div class='less-row'>
+                            <span class='label-static'>Total Deduction:</span>
+                            <input type='text' id='totalDeduction1' readonly value='0.00'>
+                        </div>
+                    </div>
+                    
+                    <!-- TOTAL NET PAY SECTION -->
+                    <div class='total-netpay-section'>
+                        <div class='total-netpay-row'>
+                            <span>TOTAL NET PAY:</span>
+                            <input type='text' id='netPay1' readonly value='0.00'>
+                        </div>
+                    </div>
+                    
+                    <!-- CERTIFIED CORRECT -->
+                    <div class='certified-section'>
+                        <span class='certified-label'>CERTIFIED CORRECT:</span>
+                        <div class='certified-center-wrapper'>
+                            <div class='certified-name-wrapper'>
+                                <button class='nav-btn' onclick='prevSignature(1)' title='Previous'>◀</button>
+                                <span class='certified-name' id='certifiedName1'>ENGR. JOSE ALBERT A. BARROGO</span>
+                                <button class='nav-btn' onclick='nextSignature(1)' title='Next'>▶</button>
+                                <input type='hidden' id='sigIndex1' value='0'>
+                            </div>
+                            <div class='signature-space'></div>
+                            <span class='certified-position' id='certifiedPosition1'>Regional Executive Director</span>
+                        </div>
+                    </div>
+                    
+                    <div class='col-content'></div>
+                </div>
+
+                <!-- RIGHT COLUMN -->
+                <div class='column' id='col2'>
+                    <img class='border-tl' src='border.png' alt='border'>
+                    <img class='border-br' src='border.png' alt='border mirrored'>
+                    <div class='header-wrapper'>
+                        <div class='logos'>
+                            <img src='bp.svg.png' alt='BP Logo'>
+                            <img src='da.png' alt='DA Logo'>
+                        </div>
+                        <div class='header-text'>
+                            Republic of the Philippines<br>
+                            <span class='bold'>DEPARTMENT OF AGRICULTURE</span><br>
+                            <span class='bold'>REGIONAL FIELD OFFICE &ndash; NEGROS ISLAND REGION</span><br>
+                            <span class='normal'>LBP Annex Bldg., Gatuslao St. Brgy 9, Bacolod City</span><br>
+                            <span class='normal'>nir@mail.da.gov.ph | (034) 468-5355</span>
+                        </div>
+                    </div>
+                    
+                    <div class='payslip-title'>PAYSLIP <span class='sub'>(COS/PB)</span></div>
+                    <div class='month-year'>
+                        <input type='month' id='monthPicker2'>
+                    </div>
+                    <div class='title-divider'></div>
+                    
+                    <div class='personnel-section'>
+                        <div class='personnel-row'>
+                            <span class='label'>ID:</span>
+                            <input type='text' id='id2'>
+                        </div>
+                        <div class='personnel-row'>
+                            <span class='label'>Name:</span>
+                            <input type='text' id='name2'>
+                        </div>
+                        <div class='personnel-row'>
+                            <span class='label'>Position:</span>
+                            <input type='text' id='position2'>
+                        </div>
+                        <div class='personnel-row'>
+                            <span class='label'>Division:</span>
+                            <input type='text' id='division2'>
+                        </div>
+                        <div class='personnel-row'>
+                            <span class='label'>Unit:</span>
+                            <input type='text' id='unit2'>
+                        </div>
+                    </div>
+                    
+                    <!-- EARNINGS SECTION -->
+                    <div class='earnings-section' id='earningsSection2'>
+                        <div class='section-header'>
+                            <span class='section-title'>EARNINGS</span>
+                            <button class='add-section-btn' onclick='addEarningRow(2)' title='Add earnings row'>+</button>
+                        </div>
+                        <div class='earnings-row' id='basicRow2'>
+                            <span class='label-static'>Monthly Basic Salary:</span>
+                            <input type='text' class='earning-input' data-col='2' inputmode='decimal' placeholder='0.00'>
+                        </div>
+                        <div class='earnings-row' id='grossRow2'>
+                            <div class='gross-label'>
+                                <span>Gross Earnings:</span>
+                                <input type='text' id='grossEarnings2' readonly value='0.00'>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- DEDUCTION SECTION -->
+                    <div class='deduction-section' id='deductionSection2'>
+                        <div class='section-header'>
+                            <span class='section-title'>DEDUCTION</span>
+                            <button class='add-section-btn' onclick='addDeductionRow(2)' title='Add deduction row'>+</button>
+                        </div>
+                        <div class='deduction-row' id='absentRow2'>
+                            <span class='label-static'>Absent:</span>
+                            <input type='text' class='deduction-input' data-col='2' inputmode='decimal' placeholder='0.00'>
+                        </div>
+                        <div class='deduction-row' id='lateRow2'>
+                            <span class='label-static'>Late:</span>
+                            <input type='text' class='deduction-input' data-col='2' inputmode='decimal' placeholder='0.00'>
+                        </div>
+                        <div class='deduction-row' id='taxRow2'>
+                            <span class='label-static'>Tax:</span>
+                            <input type='text' class='deduction-input' data-col='2' inputmode='decimal' placeholder='0.00'>
+                        </div>
+                    </div>
+                    
+                    <!-- LESS SECTION -->
+                    <div class='less-section'>
+                        <div class='less-title'>LESS</div>
+                        <div class='less-row'>
+                            <span class='label-static'>Total Deduction:</span>
+                            <input type='text' id='totalDeduction2' readonly value='0.00'>
+                        </div>
+                    </div>
+                    
+                    <!-- TOTAL NET PAY SECTION -->
+                    <div class='total-netpay-section'>
+                        <div class='total-netpay-row'>
+                            <span>TOTAL NET PAY:</span>
+                            <input type='text' id='netPay2' readonly value='0.00'>
+                        </div>
+                    </div>
+                    
+                    <!-- CERTIFIED CORRECT -->
+                    <div class='certified-section'>
+                        <span class='certified-label'>CERTIFIED CORRECT:</span>
+                        <div class='certified-center-wrapper'>
+                            <div class='certified-name-wrapper'>
+                                <button class='nav-btn' onclick='prevSignature(2)' title='Previous'>◀</button>
+                                <span class='certified-name' id='certifiedName2'>ENGR. JOSE ALBERT A. BARROGO</span>
+                                <button class='nav-btn' onclick='nextSignature(2)' title='Next'>▶</button>
+                                <input type='hidden' id='sigIndex2' value='0'>
+                            </div>
+                            <div class='signature-space'></div>
+                            <span class='certified-position' id='certifiedPosition2'>Regional Executive Director</span>
+                        </div>
+                    </div>
+                                        
+                    <div class='col-content'></div>
+                </div>
+            </body>
+            </html>
+        "></iframe>
+        </div>
+    </div>
+
+    <script>
+        const iframe = document.getElementById('payslipIframe');
+        const mainContainer = document.getElementById('mainContainer');
+        const iframeCenter = document.getElementById('iframeCenter');
+        const zoomLabel = document.getElementById('zoomLevel');
+
+        const MIN_ZOOM = 0.25;
+        const MAX_ZOOM = 3;
+        const PAGE_W_IN = 8.5;
+        const PAGE_H_IN = 13;
+        const CSS_DPI = 96;
+
+        let currentZoom = 1;
+
+        function clamp(z) {
+            return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));
+        }
+
+        function setZoom(z, opts) {
+            opts = opts || {};
+            currentZoom = clamp(z);
+
+            // Apply transform
+            iframe.style.transform = `scale(${currentZoom})`;
+            iframe.style.transformOrigin = 'top center';
+
+            // CRITICAL: Don't resize the wrapper - let the iframe scale naturally
+            // The wrapper should stay at the original size
+            iframeCenter.style.width = '';
+            iframeCenter.style.height = '';
+            iframeCenter.style.display = 'flex';
+            iframeCenter.style.justifyContent = 'center';
+            iframeCenter.style.alignItems = 'flex-start';
+
+            zoomLabel.textContent = Math.round(currentZoom * 100) + '%';
+
+            if (!opts.preserveScroll) {
+                mainContainer.scrollTop = 0;
+                mainContainer.scrollLeft = 0;
+                // Center after a small delay to allow layout to settle
+                setTimeout(function () {
+                    centerDocument();
+                }, 10);
+            }
+        }
+
+        function centerDocument() {
+            // Center the iframe horizontally only; keep the top of the page in view
+            const containerWidth = mainContainer.clientWidth;
+            const pageWidth = PAGE_W_IN * CSS_DPI * currentZoom;
+
+            const scrollX = Math.max(0, (pageWidth - containerWidth) / 2);
+
+            mainContainer.scrollLeft = scrollX;
+            mainContainer.scrollTop = 0;
+        }
+
+        function step(delta) {
+            setZoom(currentZoom + delta);
+        }
+
+        function zoomIn() {
+            if (currentZoom < 1.5) {
+                currentZoom += 0.05;
+                setZoom(currentZoom, { preserveScroll: false });
+            }
+        }
+
+        function zoomOut() {
+            if (currentZoom > 0.35) {
+                currentZoom -= 0.05;
+                setZoom(currentZoom, { preserveScroll: false });
+            }
+        }
+
+        function resetZoom() {
+            fitWidth();
+        }
+
+        function fitWidth() {
+            const available = mainContainer.clientWidth - 40;
+            const zoom = available / (PAGE_W_IN * CSS_DPI);
+            setZoom(zoom, { preserveScroll: false });
+        }
+
+        function fitPage() {
+            const availableW = mainContainer.clientWidth - 40;
+            const availableH = mainContainer.clientHeight - 40;
+            const scaleW = availableW / (PAGE_W_IN * CSS_DPI);
+            const scaleH = availableH / (PAGE_H_IN * CSS_DPI);
+            const zoom = Math.min(scaleW, scaleH);
+            setZoom(zoom, { preserveScroll: false });
+        }
+
+        function printIframe() {
+            const iframeWindow = iframe.contentWindow;
+            iframeWindow.print();
+        }
+
+        // Set default zoom to 100%
+        setZoom(1, { preserveScroll: false });
+
+        iframe.addEventListener('load', function () {
+            setTimeout(function () {
+                centerDocument();
+            }, 50);
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.ctrlKey && (e.key === '=' || e.key === '+')) {
+                e.preventDefault();
+                zoomIn();
+            } else if (e.ctrlKey && e.key === '-') {
+                e.preventDefault();
+                zoomOut();
+            } else if (e.ctrlKey && e.key === '0') {
+                e.preventDefault();
+                resetZoom();
+            }
+        });
+
+        mainContainer.addEventListener('wheel', function (e) {
+            if (!(e.ctrlKey || e.metaKey)) return;
+            e.preventDefault();
+
+            const delta = e.deltaY < 0 ? 0.08 : -0.08;
+            const newZoom = clamp(currentZoom + delta);
+            if (newZoom === currentZoom) return;
+
+            currentZoom = newZoom;
+
+            // Apply zoom without resizing wrapper
+            iframe.style.transform = `scale(${currentZoom})`;
+            iframe.style.transformOrigin = 'top center';
+            zoomLabel.textContent = Math.round(currentZoom * 100) + '%';
+            iframeCenter.style.display = 'flex';
+            iframeCenter.style.justifyContent = 'center';
+            iframeCenter.style.alignItems = 'flex-start';
+
+            // Anchor zoom to top-center, same as the toolbar zoom buttons
+            centerDocument();
+        }, { passive: false });
+
+        let isDragging = false;
+        let dragStartX = 0, dragStartY = 0, scrollStartX = 0, scrollStartY = 0;
+
+        mainContainer.addEventListener('mousedown', function (e) {
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            scrollStartX = mainContainer.scrollLeft;
+            scrollStartY = mainContainer.scrollTop;
+            mainContainer.classList.add('dragging');
+        });
+
+        window.addEventListener('mousemove', function (e) {
+            if (!isDragging) return;
+            mainContainer.scrollLeft = scrollStartX - (e.clientX - dragStartX);
+            mainContainer.scrollTop = scrollStartY - (e.clientY - dragStartY);
+        });
+
+        window.addEventListener('mouseup', function () {
+            isDragging = false;
+            mainContainer.classList.remove('dragging');
+        });
+
+        mainContainer.addEventListener('dblclick', function () {
+            resetZoom();
+        });
+
+        zoomLabel.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                zoomLabel.blur();
+            }
+        });
+        zoomLabel.addEventListener('blur', function () {
+            const parsed = parseFloat(zoomLabel.textContent.replace(/[^0-9.]/g, ''));
+            if (!isNaN(parsed) && parsed > 0) {
+                setZoom(parsed / 100, { preserveScroll: true });
+            } else {
+                setZoom(currentZoom, { preserveScroll: true });
+            }
+        });
+
+        let pinchStartDist = null;
+        let pinchStartZoom = 1;
+
+        function touchDist(t1, t2) {
+            return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        }
+
+        mainContainer.addEventListener('touchstart', function (e) {
+            if (e.touches.length === 2) {
+                pinchStartDist = touchDist(e.touches[0], e.touches[1]);
+                pinchStartZoom = currentZoom;
+            }
+        }, { passive: true });
+
+        mainContainer.addEventListener('touchmove', function (e) {
+            if (e.touches.length === 2 && pinchStartDist) {
+                e.preventDefault();
+                const newDist = touchDist(e.touches[0], e.touches[1]);
+                setZoom(pinchStartZoom * (newDist / pinchStartDist), { preserveScroll: true });
+            }
+        }, { passive: false });
+
+        mainContainer.addEventListener('touchend', function (e) {
+            if (e.touches.length < 2) pinchStartDist = null;
+        });
+    </script>
+
+</body>
+
+</html>
