@@ -87,6 +87,8 @@
             display: flex;
             align-items: center;
             gap: 14px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
 
         .toolbar .print-btn {
@@ -183,6 +185,7 @@
             overflow: auto;
             padding: 40px 20px;
             cursor: grab;
+            touch-action: none;
         }
 
         .main-container.dragging {
@@ -245,8 +248,25 @@
                 min-height: 56px;
             }
 
+            .toolbar .brand {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
+            .toolbar .controls {
+                flex: 1 1 100%;
+                justify-content: flex-start;
+            }
+
             .toolbar h2 {
                 font-size: 0.85rem;
+            }
+
+            .toolbar h2,
+            .toolbar h2 span {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .toolbar .print-btn {
@@ -256,6 +276,12 @@
 
             .main-container {
                 padding: 30px 10px;
+                touch-action: pan-y;
+                cursor: default;
+            }
+
+            .toolbar .zoom-controls {
+                display: none;
             }
         }
 
@@ -271,6 +297,57 @@
 
             .main-container {
                 padding: 20px 5px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .toolbar {
+                padding: 8px 12px;
+                gap: 6px;
+            }
+
+            .toolbar .controls {
+                gap: 8px;
+            }
+
+            .toolbar .zoom-controls button {
+                width: 24px;
+                height: 24px;
+                font-size: 13px;
+            }
+
+            .toolbar .zoom-controls .reset-btn {
+                padding: 0 6px;
+                font-size: 0.62rem;
+            }
+
+            /* Fit Page is the least-used control; hide it first to save space */
+            .toolbar .zoom-controls .reset-btn[data-btn="fit-page"] {
+                display: none;
+            }
+
+            .toolbar .print-btn {
+                padding: 6px 12px;
+                font-size: 0.7rem;
+            }
+
+            .main-container {
+                padding: 14px 4px;
+            }
+        }
+
+        @media screen and (max-width: 380px) {
+            .toolbar .zoom-controls .reset-btn[data-btn="100"] {
+                display: none;
+            }
+
+            .toolbar .zoom-controls span#zoomLevel {
+                min-width: 26px;
+                font-size: 0.62rem;
+            }
+
+            .toolbar .print-btn {
+                padding: 6px 10px;
             }
         }
     </style>
@@ -290,9 +367,11 @@
                 <span id="zoomLevel" contenteditable="true" spellcheck="false"
                     title="Click to type an exact zoom %">100%</span>
                 <button onclick="zoomIn()" title="Zoom in (Ctrl +)">+</button>
-                <button class="reset-btn" onclick="fitWidth()" title="Fit page to window width">Fit Width</button>
-                <button class="reset-btn" onclick="fitPage()" title="Fit whole page in window">Fit Page</button>
-                <button class="reset-btn" onclick="setZoom(1, { preserveScroll: false })"
+                <button class="reset-btn" data-btn="fit-width" onclick="fitWidth()" title="Fit page to window width">Fit
+                    Width</button>
+                <button class="reset-btn" data-btn="fit-page" onclick="fitPage()" title="Fit whole page in window">Fit
+                    Page</button>
+                <button class="reset-btn" data-btn="100" onclick="setZoomManual(1)"
                     title="Actual size (100%)">100%</button>
             </div>
             <button class="print-btn" onclick="printIframe()">Print</button>
@@ -960,6 +1039,16 @@
                             border-bottom: none !important;
                             -webkit-print-color-adjust: exact;
                             print-color-adjust: exact;
+                        }
+                    }
+                    /* Mobile: show only the left copy since both columns are identical.
+                       Scoped to screen so printing still outputs both copies. */
+                    @media screen {
+                        html.single-column body {
+                            width: auto !important;
+                        }
+                        html.single-column #col2 {
+                            display: none !important;
                         }
                     }
                 </style>
@@ -1887,11 +1976,28 @@
 
         const MIN_ZOOM = 0.25;
         const MAX_ZOOM = 3;
-        const PAGE_W_IN = 8.5;
         const PAGE_H_IN = 13;
         const CSS_DPI = 96;
 
+        // Below this width, show a single (left) column at a fixed fit-to-width
+        // scale instead of the full two-up page with manual zoom/pan.
+        const MOBILE_BREAKPOINT = 900;
+        const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
+
+        // The two columns are identical copies of the same payslip. On mobile
+        // we only show the left one, so the "page" is just that column's
+        // width (body padding + one column, matching its original 2-up size)
+        // instead of the full 8.5in sheet.
+        const PAGE_W_IN = isMobile ? 4.35 : 8.5;
+
+        if (isMobile) {
+            iframe.style.width = PAGE_W_IN + 'in';
+        }
+
         let currentZoom = 1;
+        // Tracks whether the current zoom should auto-adjust on resize:
+        // 'width' -> re-run fitWidth(), 'page' -> re-run fitPage(), null -> leave zoom alone, just re-center
+        let fitMode = null;
 
         function clamp(z) {
             return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));
@@ -1940,17 +2046,22 @@
             setZoom(currentZoom + delta);
         }
 
+        // Use this for any explicit, user-chosen zoom level (typed %, 100% button,
+        // +/- buttons, pinch, ctrl+scroll) so it stops auto-refitting on resize.
+        function setZoomManual(z, opts) {
+            fitMode = null;
+            setZoom(z, opts || { preserveScroll: false });
+        }
+
         function zoomIn() {
             if (currentZoom < 1.5) {
-                currentZoom += 0.05;
-                setZoom(currentZoom, { preserveScroll: false });
+                setZoomManual(currentZoom + 0.05, { preserveScroll: false });
             }
         }
 
         function zoomOut() {
             if (currentZoom > 0.35) {
-                currentZoom -= 0.05;
-                setZoom(currentZoom, { preserveScroll: false });
+                setZoomManual(currentZoom - 0.05, { preserveScroll: false });
             }
         }
 
@@ -1959,12 +2070,14 @@
         }
 
         function fitWidth() {
+            fitMode = 'width';
             const available = mainContainer.clientWidth - 40;
             const zoom = available / (PAGE_W_IN * CSS_DPI);
             setZoom(zoom, { preserveScroll: false });
         }
 
         function fitPage() {
+            fitMode = 'page';
             const availableW = mainContainer.clientWidth - 40;
             const availableH = mainContainer.clientHeight - 40;
             const scaleW = availableW / (PAGE_W_IN * CSS_DPI);
@@ -1978,10 +2091,38 @@
             iframeWindow.print();
         }
 
-        // Set default zoom to 100%
-        setZoom(1, { preserveScroll: false });
+        // Default zoom: on mobile the single column is always fit to the
+        // screen width. Desktop keeps the previous 100% default.
+        if (isMobile) {
+            fitWidth();
+        } else {
+            setZoom(1, { preserveScroll: false });
+        }
+
+        // Re-fit (or just re-center) whenever the viewport size changes —
+        // window resize, browser zoom, or a phone/tablet rotating.
+        let resizeTimer = null;
+        window.addEventListener('resize', function () {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () {
+                if (fitMode === 'width') {
+                    fitWidth();
+                } else if (fitMode === 'page') {
+                    fitPage();
+                } else {
+                    centerDocument();
+                }
+            }, 150);
+        });
 
         iframe.addEventListener('load', function () {
+            if (isMobile) {
+                try {
+                    iframe.contentDocument.documentElement.classList.add('single-column');
+                } catch (e) {
+                    // ignore - falls back to the full two-up page
+                }
+            }
             setTimeout(function () {
                 centerDocument();
             }, 50);
@@ -2001,6 +2142,7 @@
         });
 
         mainContainer.addEventListener('wheel', function (e) {
+            if (isMobile) return;
             if (!(e.ctrlKey || e.metaKey)) return;
             e.preventDefault();
 
@@ -2009,6 +2151,7 @@
             if (newZoom === currentZoom) return;
 
             currentZoom = newZoom;
+            fitMode = null;
 
             // Apply zoom without resizing wrapper
             iframe.style.transform = `scale(${currentZoom})`;
@@ -2026,6 +2169,7 @@
         let dragStartX = 0, dragStartY = 0, scrollStartX = 0, scrollStartY = 0;
 
         mainContainer.addEventListener('mousedown', function (e) {
+            if (isMobile) return;
             isDragging = true;
             dragStartX = e.clientX;
             dragStartY = e.clientY;
@@ -2046,6 +2190,7 @@
         });
 
         mainContainer.addEventListener('dblclick', function () {
+            if (isMobile) return;
             resetZoom();
         });
 
@@ -2058,7 +2203,7 @@
         zoomLabel.addEventListener('blur', function () {
             const parsed = parseFloat(zoomLabel.textContent.replace(/[^0-9.]/g, ''));
             if (!isNaN(parsed) && parsed > 0) {
-                setZoom(parsed / 100, { preserveScroll: true });
+                setZoomManual(parsed / 100, { preserveScroll: true });
             } else {
                 setZoom(currentZoom, { preserveScroll: true });
             }
@@ -2072,6 +2217,7 @@
         }
 
         mainContainer.addEventListener('touchstart', function (e) {
+            if (isMobile) return;
             if (e.touches.length === 2) {
                 pinchStartDist = touchDist(e.touches[0], e.touches[1]);
                 pinchStartZoom = currentZoom;
@@ -2082,7 +2228,7 @@
             if (e.touches.length === 2 && pinchStartDist) {
                 e.preventDefault();
                 const newDist = touchDist(e.touches[0], e.touches[1]);
-                setZoom(pinchStartZoom * (newDist / pinchStartDist), { preserveScroll: true });
+                setZoomManual(pinchStartZoom * (newDist / pinchStartDist), { preserveScroll: true });
             }
         }, { passive: false });
 
